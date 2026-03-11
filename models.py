@@ -22,9 +22,10 @@ class SearchPreference(db.Model):
     departure_time_from = db.Column(db.String(5), nullable=True)
     departure_time_to = db.Column(db.String(5), nullable=True)
 
-    # Passengers & bags
+    # Passengers, bags & stops
     num_passengers = db.Column(db.Integer, default=1)
     checked_bags_per_passenger = db.Column(db.Integer, default=0)
+    max_stops = db.Column(db.Integer, nullable=True)  # None = any number of stops
 
     # Notification settings
     email = db.Column(db.String(255), nullable=False)

@@ -36,6 +36,15 @@
         <p style="font-weight: 600;">1 carry-on + {{ pref.checked_bags_per_passenger }} checked bag(s) per person</p>
       </div>
       <div>
+        <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Max Stops</small>
+        <p style="font-weight: 600;">
+          {% if pref.max_stops is none %}Any
+          {% elif pref.max_stops == 0 %}Nonstop only
+          {% else %}Up to {{ pref.max_stops }} stop{{ 's' if pref.max_stops > 1 else '' }}
+          {% endif %}
+        </p>
+      </div>
+      <div>
         <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Alerts Sent To</small>
         <p style="font-weight: 600;">{{ pref.email }}</p>
       </div>
@@ -46,10 +55,18 @@
     </div>
   </div>
 
+  {% if email_sent %}
   <div style="background: #dcfce7; border-radius: 10px; padding: 1rem; margin-bottom: 2rem; color: #166534; font-size: 0.9rem;">
     📧 A confirmation email has been sent to <strong>{{ pref.email }}</strong>.<br/>
-    You'll receive your first flight prices shortly and then daily at <strong>7:00 AM</strong> and <strong>8:00 PM</strong>.
+    You'll receive your first flight prices shortly and then daily at <strong>7:00 AM</strong> and <strong>8:00 PM PT</strong>.
   </div>
+  {% else %}
+  <div style="background: #fee2e2; border-radius: 10px; padding: 1rem; margin-bottom: 2rem; color: #991b1b; font-size: 0.9rem;">
+    ⚠️ Tracking was saved but the confirmation email <strong>failed to send</strong> to <strong>{{ pref.email }}</strong>.<br/>
+    Check the PowerShell window for the exact error, then visit
+    <a href="/test-email" style="color:#991b1b;" target="_blank">http://localhost:5000/test-email</a> to verify SMTP.
+  </div>
+  {% endif %}
 
   <div style="display: flex; gap: 1rem; justify-content: center;">
     <a href="/" class="btn btn-primary" style="width: auto;">Track Another Route</a>

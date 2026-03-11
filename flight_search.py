@@ -116,9 +116,25 @@ def search_flights(pref) -> list[dict]:
     if pref.departure_time_from and pref.departure_time_to:
         flights = _filter_by_time(flights, pref.departure_time_from, pref.departure_time_to)
 
+    # Apply max stops filter
+    if pref.max_stops is not None:
+        flights = [
+            f for f in flights
+            if _max_stops_for_flight(f) <= pref.max_stops
+        ]
+
     # Sort by total price, return top 3
     flights.sort(key=lambda x: x["total_price"])
     return flights[:3]
+
+
+def _max_stops_for_flight(flight: dict) -> int:
+    """Return the highest stop count across all legs of a flight."""
+    out_stops = int(flight["stops"].split()[0]) if flight["stops"] != "Nonstop" else 0
+    if flight.get("return"):
+        ret_stops = int(flight["return"]["stops"].split()[0]) if flight["return"]["stops"] != "Nonstop" else 0
+        return max(out_stops, ret_stops)
+    return out_stops
 
 
 def _parse_offer(offer: dict, pref) -> dict | None:

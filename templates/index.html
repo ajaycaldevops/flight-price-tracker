@@ -108,10 +108,10 @@
                  value="{{ form.get('departure_date_from', '') }}" required />
         </div>
         <div class="form-group">
-          <label>Latest Departure Date</label>
+          <label>Latest Departure Date <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
           <input type="date" name="departure_date_to"
-                 value="{{ form.get('departure_date_to', '') }}" required />
-          <small>Search covers all dates in this range</small>
+                 value="{{ form.get('departure_date_to', '') }}" />
+          <small>Leave blank to search only the earliest date</small>
         </div>
       </div>
       <div class="form-row">
@@ -122,10 +122,10 @@
           <small>Leave blank for one-way</small>
         </div>
         <div class="form-group">
-          <label>Latest Return Date</label>
+          <label>Latest Return Date <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
           <input type="date" name="return_date_to"
                  value="{{ form.get('return_date_to', '') }}" />
-          <small>Search covers all return dates in this range</small>
+          <small>Leave blank to search only the earliest return date</small>
         </div>
       </div>
       <div class="form-row">
@@ -146,7 +146,7 @@
 
     <!-- Passengers & Bags -->
     <div class="card" style="background:#f8fafc; box-shadow:none; border:1.5px solid #e2e8f0; padding:1.25rem;">
-      <h2 style="font-size:1rem; margin-bottom:0.9rem;">Passengers & Baggage</h2>
+      <h2 style="font-size:1rem; margin-bottom:0.9rem;">Passengers, Baggage & Preferences</h2>
       <div class="form-row three">
         <div class="form-group">
           <label>Number of Passengers</label>
@@ -169,6 +169,18 @@
           </select>
           <small>1 carry-on always included per passenger</small>
         </div>
+        <div class="form-group">
+          <label>Max Number of Stops</label>
+          <select name="max_stops">
+            <option value="" {% if form.get('max_stops', '') == '' %}selected{% endif %}>Any</option>
+            <option value="0" {% if form.get('max_stops', '') == '0' %}selected{% endif %}>Nonstop only</option>
+            <option value="1" {% if form.get('max_stops', '') == '1' %}selected{% endif %}>Up to 1 stop</option>
+            <option value="2" {% if form.get('max_stops', '') == '2' %}selected{% endif %}>Up to 2 stops</option>
+          </select>
+          <small>Applies to each flight leg</small>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:0.75rem;">
         <div class="form-group">
           <label>Track Prices for (Days)</label>
           <select name="tracking_days">
