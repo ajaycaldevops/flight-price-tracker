@@ -13,39 +13,43 @@ python run.py
 
 `pip` alone is not recognized on this machine — always use `python -m pip`.
 
-To manually trigger a price check without waiting for the schedule, visit `/searches` and click **"Run Price Check Now"**.
+**After any schema change:** stop the app, delete `instance/flight_tracker.db`, restart. Flask-SQLAlchemy's `create_all()` only creates missing tables — it never alters existing ones.
+
+To manually trigger a price check, visit `/searches` → "Run Price Check Now".
+To diagnose SMTP issues, visit `/test-email` (sends a plain-text email and prints each step).
 
 ## Environment
 
-All secrets live in `.env` (never commit this). Copy `.env.example` to create one. Required keys:
+All secrets live in `.env` (never commit). Required keys:
 - `AMADEUS_CLIENT_ID` / `AMADEUS_CLIENT_SECRET` — from developers.amadeus.com
 - `AMADEUS_HOSTNAME` — `test` for sandbox, `production` for live data
 - `SMTP_EMAIL` / `SMTP_PASSWORD` — Gmail address + 16-char App Password (not the account password)
 
 ## Architecture
 
-The app is a Flask web app with a background scheduler. All modules import from each other within a Flask app context.
+Flask web app + APScheduler background scheduler. All business logic runs inside a Flask app context.
 
-**Request flow (form submission):**
-1. `app.py` validates form → saves `SearchPreference` to SQLite → calls `send_confirmation_email` → calls `run_price_checks` immediately for instant results → redirects to `/success`
+**Form submission flow:**
+`app.py` validates → saves `SearchPreference` to SQLite → `send_confirmation_email` → `run_price_checks` (immediate first send) → redirect to `/success`
 
-**Scheduled flow (7am & 8pm PT daily):**
-1. `scheduler.py` (`APScheduler` with `America/Los_Angeles` timezone) calls `run_price_checks(app)`
-2. `run_price_checks` queries all active, non-expired `SearchPreference` rows
-3. For each: calls `flight_search.search_flights(pref)` → calls `email_service.send_flight_alert(pref, flights)`
-4. Also deactivates expired searches in the same run
+**Scheduled flow (7:00 AM & 8:00 PM PT daily):**
+`scheduler.py` (APScheduler, `America/Los_Angeles`) → `run_price_checks(app)` → for each active non-expired `SearchPreference`: `search_flights(pref)` → `send_flight_alert(pref, flights)`. Same run deactivates expired searches.
 
-**Key design constraints:**
-- `scheduler.py` imports `models`, `flight_search`, and `email_service` lazily (inside `run_price_checks`) to avoid circular imports at module load time
-- The `enumerate` built-in is registered as a Jinja2 filter in `create_app()` so `email.html` can use `{% for rank, f in flights | enumerate(1) %}`
-- `AMADEUS_HOSTNAME=test` (sandbox) has limited route/date coverage — flights may return empty for many routes. Switch to `production` after Amadeus approval for real data.
+**Key constraints:**
+- `scheduler.py` imports `models`, `flight_search`, and `email_service` lazily inside `run_price_checks` to avoid circular imports at module load time.
+- `enumerate` is registered as a Jinja2 filter in **two** places: `create_app()` for Flask's env (used by web templates) and `_get_jinja_env()` in `email_service.py` for its standalone env (used by email templates). Both are required — missing either causes `TemplateAssertionError: No filter named 'enumerate'`.
+- `AMADEUS_HOSTNAME=test` (sandbox) returns limited routes/dates. Many searches return empty results in sandbox — switch to `production` for real data.
 
-**Flight search logic (`flight_search.py`):**
-- Iterates every date in `departure_date_from`..`departure_date_to`, querying Amadeus separately per date (API doesn't support date ranges natively)
-- After collecting all offers, optionally filters by `departure_time_from`/`departure_time_to`; if filtering removes all results, falls back to unfiltered
-- Returns top 3 by `grandTotal` price
-- Booking links are constructed as Kayak deep links, Google Flights links, and direct airline website URLs (see `_get_airline_website`)
+**Flight search (`flight_search.py`):**
+- Builds all `(departure_date, return_date)` pairs from the date ranges; capped at 20 API calls total (sampled evenly if exceeded).
+- `departure_date_to` and `return_date_to` are optional in the form — `app.py` defaults them to the `_from` value before saving, so `search_flights` always receives a valid range.
+- Each Amadeus call uses `returnDate` param for round trips; response has `itineraries[0]` (outbound) and `itineraries[1]` (return).
+- Post-fetch filters applied in order: departure time window (falls back to unfiltered if nothing matches), then `max_stops` (checked per leg via `_max_stops_for_flight`).
+- Returns top 3 sorted by `grandTotal` price. Booking links: Kayak deep link (includes return date for round trips), Google Flights, and `_get_airline_website` lookup.
 
-**Database:** SQLite at `instance/flight_tracker.db` (auto-created by Flask-SQLAlchemy). Single table: `search_preferences`. No migrations setup — schema changes require dropping and recreating the DB.
+**`SearchPreference` model fields of note:**
+- `departure_date_to`, `return_date_from/to`, `departure_time_from/to` — all nullable; absence means single-date or one-way or any-time search.
+- `max_stops` — nullable Integer; `None` = no stops filter, `0` = nonstop only.
+- `expires_at` — set to `created_at + tracking_days`; scheduler deactivates rows where `expires_at < now`.
 
-**Email templates** (`templates/email.html`, `templates/confirmation_email.html`) are rendered via Jinja2 in `email_service.py` using a standalone `Environment` (not the Flask one), then sent via Gmail SMTP with `starttls`.
+**Email templates** (`email.html`, `confirmation_email.html`) are rendered by a standalone Jinja2 `Environment` in `email_service.py` (not Flask's env). Template dir resolved with `os.path.abspath(__file__)` to avoid working-directory issues. Sent via Gmail SMTP port 587 with STARTTLS.
