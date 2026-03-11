@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Flight Price Tracker{% endblock %}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f4ff;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      color: white;
+      padding: 1.2rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 { font-size: 1.5rem; font-weight: 700; }
+    header span { font-size: 1.6rem; }
+
+    nav { margin-left: auto; display: flex; gap: 1rem; }
+    nav a {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: white; }
+
+    main {
+      max-width: 860px;
+      margin: 2.5rem auto;
+      padding: 0 1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 24px rgba(30,58,138,0.08);
+      margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1.25rem;
+      color: #1e3a8a;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #e0e7ff;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+    .form-row.full { grid-template-columns: 1fr; }
+
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .form-group input, .form-group select {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.95rem;
+      color: #1a1a2e;
+      background: #f8fafc;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .form-group input:focus, .form-group select:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+      background: white;
+    }
+    .form-group small { color: #94a3b8; font-size: 0.78rem; }
+
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 2rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      color: white;
+      width: 100%;
+      margin-top: 1rem;
+      font-size: 1.05rem;
+      padding: 0.9rem;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.35); }
+    .btn-danger { background: #ef4444; color: white; padding: 0.4rem 1rem; font-size: 0.85rem; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-secondary { background: #e0e7ff; color: #1e3a8a; }
+    .btn-secondary:hover { background: #c7d2fe; }
+
+    .flash-messages { margin-bottom: 1rem; }
+    .flash {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    .flash.error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .flash.success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .flash.info { background: #e0f2fe; color: #075985; border: 1px solid #7dd3fc; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-gray { background: #f1f5f9; color: #64748b; }
+
+    footer {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      padding: 2rem;
+    }
+
+    /* Autocomplete */
+    .autocomplete-wrapper { position: relative; }
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      z-index: 100;
+      max-height: 220px;
+      overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+    .autocomplete-item {
+      padding: 0.6rem 0.9rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .autocomplete-item:hover { background: #e0e7ff; }
+    .autocomplete-item strong { color: #1e3a8a; }
+
+    @media (max-width: 600px) {
+      .form-row, .form-row.three { grid-template-columns: 1fr; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header>
+    <span>✈</span>
+    <h1>Flight Price Tracker</h1>
+    <nav>
+      <a href="/">New Search</a>
+      <a href="/searches">My Searches</a>
+    </nav>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>Flight Price Tracker &mdash; Prices sourced via Amadeus API &mdash; Book directly with airlines or aggregators.</footer>
+</body>
+</html>

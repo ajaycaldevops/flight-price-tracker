@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Top Flight Prices: {{ pref.origin }} → {{ pref.destination }}</title>
+</head>
+<body style="margin:0; padding:0; background:#f0f4ff; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f4ff; padding:32px 0;">
+    <tr><td align="center">
+      <table width="620" cellpadding="0" cellspacing="0" border="0" style="max-width:620px; width:100%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#1e3a8a,#3b82f6); padding:28px 32px; border-radius:16px 16px 0 0; text-align:center;">
+            <div style="font-size:2rem; margin-bottom:6px;">✈</div>
+            <h1 style="color:white; margin:0; font-size:1.4rem; font-weight:700;">
+              Top {{ num_results }} Flights Found
+            </h1>
+            <p style="color:rgba(255,255,255,0.85); margin:6px 0 0; font-size:0.95rem;">
+              {{ pref.origin }} &rarr; {{ pref.destination }} &bull;
+              {{ pref.departure_date_from }} to {{ pref.departure_date_to }}
+            </p>
+          </td>
+        </tr>
+
+        <!-- Search Summary -->
+        <tr>
+          <td style="background:#dbeafe; padding:14px 32px; text-align:center; font-size:0.85rem; color:#1e40af;">
+            <strong>{{ pref.num_passengers }} passenger(s)</strong> &bull;
+            1 carry-on included &bull;
+            {{ pref.checked_bags_per_passenger }} checked bag(s) per person
+            {% if pref.departure_time_from and pref.departure_time_to %}
+              &bull; Departure {{ pref.departure_time_from }}–{{ pref.departure_time_to }}
+            {% endif %}
+          </td>
+        </tr>
+
+        <!-- Flight Cards -->
+        <tr>
+          <td style="background:white; padding:24px 32px;">
+
+            {% for rank, f in flights | enumerate(1) %}
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background:{% if rank == 1 %}#f0fdf4{% elif rank == 2 %}#f0f9ff{% else %}#fafafa{% endif %};
+                          border:2px solid {% if rank == 1 %}#86efac{% elif rank == 2 %}#7dd3fc{% else %}#e2e8f0{% endif %};
+                          border-radius:12px; margin-bottom:20px; overflow:hidden;">
+              <tr>
+                <td style="padding:16px 20px;">
+
+                  <!-- Rank badge + airline -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td>
+                        <span style="background:{% if rank == 1 %}#16a34a{% elif rank == 2 %}#0284c7{% else %}#6b7280{% endif %};
+                                     color:white; font-size:0.72rem; font-weight:700; padding:3px 10px;
+                                     border-radius:999px; text-transform:uppercase; letter-spacing:0.05em;">
+                          #{{ rank }} {% if rank == 1 %}Best Price{% elif rank == 2 %}2nd Best{% else %}3rd Best{% endif %}
+                        </span>
+                        <span style="margin-left:10px; font-size:1rem; font-weight:700; color:#1a1a2e;">
+                          {{ f.airline }}
+                        </span>
+                        <span style="margin-left:6px; color:#64748b; font-size:0.85rem;">{{ f.flight_numbers }}</span>
+                      </td>
+                      <td align="right">
+                        <span style="font-size:1.6rem; font-weight:800; color:{% if rank == 1 %}#16a34a{% elif rank == 2 %}#0284c7{% else %}#374151{% endif %};">
+                          ${{ "%.2f"|format(f.total_price) }}
+                        </span>
+                        <span style="display:block; font-size:0.75rem; color:#94a3b8; text-align:right;">
+                          total &bull; ${{ "%.2f"|format(f.price_per_person) }}/person
+                        </span>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Divider -->
+                  <hr style="border:none; border-top:1px solid rgba(0,0,0,0.08); margin:12px 0;">
+
+                  <!-- Flight details -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td width="45%" style="font-size:0.9rem; color:#374151;">
+                        <strong style="display:block; font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px;">Departure</strong>
+                        {{ f.departure }}
+                      </td>
+                      <td width="10%" align="center" style="color:#94a3b8; font-size:1.2rem;">&rarr;</td>
+                      <td width="45%" style="font-size:0.9rem; color:#374151;" align="right">
+                        <strong style="display:block; font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px; text-align:right;">Arrival</strong>
+                        {{ f.arrival }}
+                      </td>
+                    </tr>
+                  </table>
+
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;">
+                    <tr>
+                      <td style="font-size:0.82rem; color:#64748b;">
+                        ⏱ {{ f.duration }} &nbsp;&bull;&nbsp;
+                        {{ f.stops }} &nbsp;&bull;&nbsp;
+                        🧳 1 carry-on
+                        {% if f.bags_included > 0 %} + {{ f.bags_included }} checked bag(s) included{% endif %}
+                        {% if pref.checked_bags_per_passenger > f.bags_included %}
+                          <span style="color:#dc2626;">(+{{ pref.checked_bags_per_passenger - f.bags_included }} bag fee may apply)</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Booking links -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;">
+                    <tr>
+                      <td>
+                        <a href="{{ f.kayak_url }}"
+                           style="display:inline-block; background:#ff690f; color:white; text-decoration:none;
+                                  padding:8px 16px; border-radius:7px; font-size:0.82rem; font-weight:600; margin-right:8px;">
+                          Book on Kayak
+                        </a>
+                        <a href="{{ f.google_flights_url }}"
+                           style="display:inline-block; background:#4285f4; color:white; text-decoration:none;
+                                  padding:8px 16px; border-radius:7px; font-size:0.82rem; font-weight:600; margin-right:8px;">
+                          Google Flights
+                        </a>
+                        <a href="{{ f.airline_website }}"
+                           style="display:inline-block; background:#e0e7ff; color:#1e3a8a; text-decoration:none;
+                                  padding:8px 16px; border-radius:7px; font-size:0.82rem; font-weight:600;">
+                          {{ f.airline }} Website
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+
+                </td>
+              </tr>
+            </table>
+            {% endfor %}
+
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#1e3a8a; padding:20px 32px; border-radius:0 0 16px 16px; text-align:center;">
+            <p style="color:rgba(255,255,255,0.7); font-size:0.8rem; margin:0 0 6px;">
+              Sent {{ sent_at }} &bull; Prices may change — always verify before booking.
+            </p>
+            <p style="color:rgba(255,255,255,0.5); font-size:0.75rem; margin:0;">
+              You're receiving this because you signed up for flight tracking for
+              {{ pref.origin }} → {{ pref.destination }}. Tracking ends {{ pref.expires_at.strftime("%B %d, %Y") }}.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+
+</body>
+</html>

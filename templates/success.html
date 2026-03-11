@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Tracking Started{% endblock %}
+
+{% block content %}
+<div class="card" style="text-align:center; padding: 3rem 2rem;">
+  <div style="font-size: 3.5rem; margin-bottom: 1rem;">✅</div>
+  <h2 style="font-size: 1.5rem; color: #1e3a8a; border: none; margin-bottom: 0.5rem;">
+    Flight Tracking Active!
+  </h2>
+  <p style="color: #475569; margin-bottom: 2rem;">
+    We're monitoring <strong>{{ pref.origin }} → {{ pref.destination }}</strong> prices for you.
+  </p>
+
+  <div style="background: #f0f9ff; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; text-align: left;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+      <div>
+        <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Route</small>
+        <p style="font-size: 1.1rem; font-weight: 700; color:#1e3a8a;">{{ pref.origin }} → {{ pref.destination }}</p>
+      </div>
+      <div>
+        <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Travel Dates</small>
+        <p style="font-weight: 600;">{{ pref.departure_date_from }} → {{ pref.departure_date_to }}</p>
+      </div>
+      <div>
+        <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Passengers</small>
+        <p style="font-weight: 600;">{{ pref.num_passengers }} passenger(s)</p>
+      </div>
+      <div>
+        <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Baggage</small>
+        <p style="font-weight: 600;">1 carry-on + {{ pref.checked_bags_per_passenger }} checked bag(s) per person</p>
+      </div>
+      <div>
+        <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Alerts Sent To</small>
+        <p style="font-weight: 600;">{{ pref.email }}</p>
+      </div>
+      <div>
+        <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Tracking Until</small>
+        <p style="font-weight: 600;">{{ pref.expires_at.strftime("%B %d, %Y") }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="background: #dcfce7; border-radius: 10px; padding: 1rem; margin-bottom: 2rem; color: #166534; font-size: 0.9rem;">
+    📧 A confirmation email has been sent to <strong>{{ pref.email }}</strong>.<br/>
+    You'll receive your first flight prices shortly and then daily at <strong>7:00 AM</strong> and <strong>8:00 PM</strong>.
+  </div>
+
+  <div style="display: flex; gap: 1rem; justify-content: center;">
+    <a href="/" class="btn btn-primary" style="width: auto;">Track Another Route</a>
+    <a href="/searches" class="btn btn-secondary">View All Searches</a>
+  </div>
+</div>
+{% endblock %}

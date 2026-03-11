@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flight Tracking Started</title>
+</head>
+<body style="margin:0; padding:0; background:#f0f4ff; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f0f4ff; padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px; width:100%;">
+
+        <tr>
+          <td style="background:linear-gradient(135deg,#1e3a8a,#3b82f6); padding:28px 32px; border-radius:16px 16px 0 0; text-align:center;">
+            <div style="font-size:2.5rem; margin-bottom:8px;">✅</div>
+            <h1 style="color:white; margin:0; font-size:1.3rem; font-weight:700;">
+              Flight Tracking Confirmed!
+            </h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="background:white; padding:28px 32px; border-radius:0 0 16px 16px;">
+            <p style="color:#374151; margin:0 0 20px;">
+              Great news! We're now tracking flight prices for your trip:
+            </p>
+
+            <table width="100%" cellpadding="12" cellspacing="0" border="0"
+                   style="background:#f0f9ff; border-radius:10px; margin-bottom:20px;">
+              <tr>
+                <td style="font-size:0.82rem; color:#475569; text-transform:uppercase; font-weight:600; letter-spacing:0.04em;">Route</td>
+                <td style="font-size:1.1rem; font-weight:700; color:#1e3a8a;">{{ pref.origin }} → {{ pref.destination }}</td>
+              </tr>
+              <tr>
+                <td style="font-size:0.82rem; color:#475569; text-transform:uppercase; font-weight:600; letter-spacing:0.04em;">Travel Dates</td>
+                <td style="font-weight:600;">{{ pref.departure_date_from }} to {{ pref.departure_date_to }}</td>
+              </tr>
+              <tr>
+                <td style="font-size:0.82rem; color:#475569; text-transform:uppercase; font-weight:600; letter-spacing:0.04em;">Passengers</td>
+                <td>{{ pref.num_passengers }}</td>
+              </tr>
+              <tr>
+                <td style="font-size:0.82rem; color:#475569; text-transform:uppercase; font-weight:600; letter-spacing:0.04em;">Baggage</td>
+                <td>1 carry-on + {{ pref.checked_bags_per_passenger }} checked bag(s) per passenger</td>
+              </tr>
+              <tr>
+                <td style="font-size:0.82rem; color:#475569; text-transform:uppercase; font-weight:600; letter-spacing:0.04em;">Tracking Until</td>
+                <td style="font-weight:600;">{{ expires_at }}</td>
+              </tr>
+            </table>
+
+            <div style="background:#dcfce7; border-radius:10px; padding:14px 18px; margin-bottom:20px; color:#166534; font-size:0.9rem;">
+              📅 You'll receive the <strong>3 best-priced flights</strong> daily at <strong>7:00 AM</strong> and <strong>8:00 PM</strong> (Pacific Time).
+            </div>
+
+            <p style="color:#94a3b8; font-size:0.8rem; text-align:center; margin:0;">
+              Prices sourced via Amadeus API. Always verify before booking.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+
+</body>
+</html>

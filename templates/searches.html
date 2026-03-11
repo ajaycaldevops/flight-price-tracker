@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}My Searches{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h2>Active & Past Searches</h2>
+
+  {% if not searches %}
+    <p style="color:#64748b; text-align:center; padding: 2rem 0;">
+      No searches yet. <a href="/" style="color:#3b82f6;">Start tracking a flight →</a>
+    </p>
+  {% else %}
+    <div style="overflow-x: auto;">
+      <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+        <thead>
+          <tr style="background:#e0e7ff; text-transform:uppercase; font-size:0.75rem; color:#475569; letter-spacing:0.04em;">
+            <th style="padding:0.7rem 0.9rem; text-align:left;">Route</th>
+            <th style="padding:0.7rem 0.9rem; text-align:left;">Travel Dates</th>
+            <th style="padding:0.7rem 0.9rem; text-align:left;">Pax / Bags</th>
+            <th style="padding:0.7rem 0.9rem; text-align:left;">Email</th>
+            <th style="padding:0.7rem 0.9rem; text-align:left;">Expires</th>
+            <th style="padding:0.7rem 0.9rem; text-align:left;">Status</th>
+            <th style="padding:0.7rem 0.9rem;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in searches %}
+          <tr style="border-bottom:1px solid #e2e8f0; {% if loop.even %}background:#f8fafc;{% endif %}">
+            <td style="padding:0.75rem 0.9rem; font-weight:700; color:#1e3a8a;">{{ s.origin }} → {{ s.destination }}</td>
+            <td style="padding:0.75rem 0.9rem; color:#374151;">
+              {{ s.departure_date_from }}<br/>
+              <span style="color:#94a3b8; font-size:0.8rem;">to {{ s.departure_date_to }}</span>
+            </td>
+            <td style="padding:0.75rem 0.9rem;">
+              {{ s.num_passengers }} pax<br/>
+              <span style="color:#94a3b8; font-size:0.8rem;">+{{ s.checked_bags_per_passenger }} checked</span>
+            </td>
+            <td style="padding:0.75rem 0.9rem; color:#374151; font-size:0.85rem;">{{ s.email }}</td>
+            <td style="padding:0.75rem 0.9rem; color:#374151;">{{ s.expires_at.strftime("%b %d, %Y") }}</td>
+            <td style="padding:0.75rem 0.9rem;">
+              {% if s.is_active %}
+                <span class="badge badge-green">Active</span>
+              {% else %}
+                <span class="badge badge-gray">Expired</span>
+              {% endif %}
+            </td>
+            <td style="padding:0.75rem 0.9rem;">
+              {% if s.is_active %}
+              <form method="POST" action="/cancel/{{ s.id }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('Cancel tracking for {{ s.origin }} → {{ s.destination }}?')">
+                  Cancel
+                </button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:1.5rem; display:flex; gap:1rem;">
+      <form method="POST" action="/run-now">
+        <button type="submit" class="btn btn-secondary" style="font-size:0.9rem;">
+          ⚡ Run Price Check Now
+        </button>
+      </form>
+      <a href="/" class="btn btn-primary" style="width:auto; font-size:0.9rem; padding:0.6rem 1.5rem;">
+        + New Search
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
