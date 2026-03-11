@@ -19,8 +19,17 @@
               Top {{ num_results }} Flights Found
             </h1>
             <p style="color:rgba(255,255,255,0.85); margin:6px 0 0; font-size:0.95rem;">
-              {{ pref.origin }} &rarr; {{ pref.destination }} &bull;
-              {{ pref.departure_date_from }} to {{ pref.departure_date_to }}
+              {% if pref.return_date_from %}
+                {{ pref.origin }} &harr; {{ pref.destination }} &bull; Round Trip
+              {% else %}
+                {{ pref.origin }} &rarr; {{ pref.destination }} &bull; One Way
+              {% endif %}
+            </p>
+            <p style="color:rgba(255,255,255,0.7); margin:4px 0 0; font-size:0.85rem;">
+              Depart: {{ pref.departure_date_from }} – {{ pref.departure_date_to }}
+              {% if pref.return_date_from %}
+                &bull; Return: {{ pref.return_date_from }} – {{ pref.return_date_to }}
+              {% endif %}
             </p>
           </td>
         </tr>
@@ -77,7 +86,12 @@
                   <!-- Divider -->
                   <hr style="border:none; border-top:1px solid rgba(0,0,0,0.08); margin:12px 0;">
 
-                  <!-- Flight details -->
+                  <!-- Outbound leg -->
+                  {% if f.is_roundtrip %}
+                  <div style="font-size:0.72rem; font-weight:700; color:#1e3a8a; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
+                    ✈ Outbound &mdash; {{ f.flight_numbers }}
+                  </div>
+                  {% endif %}
                   <table width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td width="45%" style="font-size:0.9rem; color:#374151;">
@@ -91,13 +105,38 @@
                       </td>
                     </tr>
                   </table>
+                  <div style="font-size:0.82rem; color:#64748b; margin-top:6px;">
+                    ⏱ {{ f.duration }} &nbsp;&bull;&nbsp; {{ f.stops }}
+                  </div>
+
+                  <!-- Return leg -->
+                  {% if f.is_roundtrip and f.return %}
+                  <hr style="border:none; border-top:1px dashed #cbd5e1; margin:12px 0;">
+                  <div style="font-size:0.72rem; font-weight:700; color:#0284c7; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">
+                    ↩ Return &mdash; {{ f.return.flight_numbers }}
+                  </div>
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td width="45%" style="font-size:0.9rem; color:#374151;">
+                        <strong style="display:block; font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px;">Departure</strong>
+                        {{ f.return.departure }}
+                      </td>
+                      <td width="10%" align="center" style="color:#94a3b8; font-size:1.2rem;">&rarr;</td>
+                      <td width="45%" style="font-size:0.9rem; color:#374151;" align="right">
+                        <strong style="display:block; font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px; text-align:right;">Arrival</strong>
+                        {{ f.return.arrival }}
+                      </td>
+                    </tr>
+                  </table>
+                  <div style="font-size:0.82rem; color:#64748b; margin-top:6px;">
+                    ⏱ {{ f.return.duration }} &nbsp;&bull;&nbsp; {{ f.return.stops }}
+                  </div>
+                  {% endif %}
 
                   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;">
                     <tr>
                       <td style="font-size:0.82rem; color:#64748b;">
-                        ⏱ {{ f.duration }} &nbsp;&bull;&nbsp;
-                        {{ f.stops }} &nbsp;&bull;&nbsp;
-                        🧳 1 carry-on
+                        🧳 1 carry-on per person
                         {% if f.bags_included > 0 %} + {{ f.bags_included }} checked bag(s) included{% endif %}
                         {% if pref.checked_bags_per_passenger > f.bags_included %}
                           <span style="color:#dc2626;">(+{{ pref.checked_bags_per_passenger - f.bags_included }} bag fee may apply)</span>

@@ -42,6 +42,8 @@ def create_app():
             departure_date_to = request.form.get("departure_date_to", "").strip()
             departure_time_from = request.form.get("departure_time_from", "").strip() or None
             departure_time_to = request.form.get("departure_time_to", "").strip() or None
+            return_date_from = request.form.get("return_date_from", "").strip() or None
+            return_date_to = request.form.get("return_date_to", "").strip() or None
             email = request.form.get("email", "").strip()
             tracking_days = request.form.get("tracking_days", "7").strip()
 
@@ -87,7 +89,21 @@ def create_app():
                 if d_from < datetime.utcnow().date():
                     errors.append("Departure date cannot be in the past.")
             except ValueError:
-                errors.append("Invalid date format.")
+                errors.append("Invalid departure date format.")
+
+            if return_date_from and return_date_to:
+                try:
+                    r_from = datetime.strptime(return_date_from, "%Y-%m-%d").date()
+                    r_to = datetime.strptime(return_date_to, "%Y-%m-%d").date()
+                    if r_from > r_to:
+                        errors.append("Return 'from' date must be before or equal to 'to' date.")
+                    d_from_date = datetime.strptime(departure_date_from, "%Y-%m-%d").date()
+                    if r_from <= d_from_date:
+                        errors.append("Return date must be after the departure date.")
+                except ValueError:
+                    errors.append("Invalid return date format.")
+            elif bool(return_date_from) != bool(return_date_to):
+                errors.append("Please provide both earliest and latest return dates.")
 
             if errors:
                 for err in errors:
@@ -103,6 +119,8 @@ def create_app():
                 departure_date_to=departure_date_to,
                 departure_time_from=departure_time_from,
                 departure_time_to=departure_time_to,
+                return_date_from=return_date_from,
+                return_date_to=return_date_to,
                 num_passengers=num_passengers,
                 checked_bags_per_passenger=checked_bags,
                 email=email,

@@ -18,9 +18,15 @@
         <p style="font-size: 1.1rem; font-weight: 700; color:#1e3a8a;">{{ pref.origin }} → {{ pref.destination }}</p>
       </div>
       <div>
-        <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Travel Dates</small>
+        <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Departure Dates</small>
         <p style="font-weight: 600;">{{ pref.departure_date_from }} → {{ pref.departure_date_to }}</p>
       </div>
+      {% if pref.return_date_from %}
+      <div>
+        <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Return Dates</small>
+        <p style="font-weight: 600;">{{ pref.return_date_from }} → {{ pref.return_date_to }}</p>
+      </div>
+      {% endif %}
       <div>
         <small style="color:#64748b; text-transform:uppercase; font-size:0.75rem; font-weight:600;">Passengers</small>
         <p style="font-weight: 600;">{{ pref.num_passengers }} passenger(s)</p>

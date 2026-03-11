@@ -55,31 +55,50 @@ def search_airport(keyword: str) -> list[dict]:
 
 def search_flights(pref) -> list[dict]:
     """
-    Search all departure dates in the range and return top 3 cheapest flights
-    that fall within the optional departure time window.
-    Returns list of flight dicts ready for email rendering.
+    Search all departure date (× return date for round trips) combinations and
+    return the top 3 cheapest flights within the optional departure time window.
+    Capped at 20 API calls to stay within Amadeus rate limits.
     """
     amadeus = get_amadeus_client()
 
-    date_from = datetime.strptime(pref.departure_date_from, "%Y-%m-%d").date()
-    date_to = datetime.strptime(pref.departure_date_to, "%Y-%m-%d").date()
+    dep_from = datetime.strptime(pref.departure_date_from, "%Y-%m-%d").date()
+    dep_to = datetime.strptime(pref.departure_date_to, "%Y-%m-%d").date()
+
+    is_roundtrip = bool(pref.return_date_from and pref.return_date_to)
+
+    # Build list of (dep_date, ret_date | None) pairs to query
+    dep_dates = [dep_from + timedelta(days=i) for i in range((dep_to - dep_from).days + 1)]
+
+    if is_roundtrip:
+        ret_from = datetime.strptime(pref.return_date_from, "%Y-%m-%d").date()
+        ret_to = datetime.strptime(pref.return_date_to, "%Y-%m-%d").date()
+        ret_dates = [ret_from + timedelta(days=i) for i in range((ret_to - ret_from).days + 1)]
+        pairs = [(d, r) for d in dep_dates for r in ret_dates if r > d]
+    else:
+        pairs = [(d, None) for d in dep_dates]
+
+    # Cap at 20 calls, sampling evenly if needed
+    if len(pairs) > 20:
+        step = len(pairs) // 20
+        pairs = pairs[::step][:20]
 
     all_offers = []
-    current = date_from
-    while current <= date_to:
+    for dep_date, ret_date in pairs:
+        params = dict(
+            originLocationCode=pref.origin.upper(),
+            destinationLocationCode=pref.destination.upper(),
+            departureDate=dep_date.strftime("%Y-%m-%d"),
+            adults=pref.num_passengers,
+            max=20,
+            currencyCode="USD",
+        )
+        if ret_date:
+            params["returnDate"] = ret_date.strftime("%Y-%m-%d")
         try:
-            response = amadeus.shopping.flight_offers_search.get(
-                originLocationCode=pref.origin.upper(),
-                destinationLocationCode=pref.destination.upper(),
-                departureDate=current.strftime("%Y-%m-%d"),
-                adults=pref.num_passengers,
-                max=20,
-                currencyCode="USD",
-            )
+            response = amadeus.shopping.flight_offers_search.get(**params)
             all_offers.extend(response.data or [])
         except ResponseError as e:
-            logger.warning(f"No results for {current}: {e}")
-        current += timedelta(days=1)
+            logger.warning(f"No results for {dep_date}/{ret_date}: {e}")
 
     if not all_offers:
         return []
@@ -103,20 +122,36 @@ def search_flights(pref) -> list[dict]:
 
 
 def _parse_offer(offer: dict, pref) -> dict | None:
-    itinerary = offer["itineraries"][0]
-    segments = itinerary["segments"]
-    first_seg = segments[0]
-    last_seg = segments[-1]
+    itineraries = offer["itineraries"]
 
-    departure_dt = datetime.fromisoformat(first_seg["departure"]["at"])
-    arrival_dt = datetime.fromisoformat(last_seg["arrival"]["at"])
-    num_stops = len(segments) - 1
+    # Outbound leg
+    out = itineraries[0]
+    out_segs = out["segments"]
+    out_dep_dt = datetime.fromisoformat(out_segs[0]["departure"]["at"])
+    out_arr_dt = datetime.fromisoformat(out_segs[-1]["arrival"]["at"])
+    out_stops = len(out_segs) - 1
+    out_flights = " → ".join(f"{s['carrierCode']}{s['number']}" for s in out_segs)
 
-    carrier_code = offer.get("validatingAirlineCodes", [first_seg["carrierCode"]])[0]
+    # Return leg (round trip only)
+    ret_info = None
+    if len(itineraries) > 1:
+        ret = itineraries[1]
+        ret_segs = ret["segments"]
+        ret_dep_dt = datetime.fromisoformat(ret_segs[0]["departure"]["at"])
+        ret_arr_dt = datetime.fromisoformat(ret_segs[-1]["arrival"]["at"])
+        ret_stops = len(ret_segs) - 1
+        ret_flights = " → ".join(f"{s['carrierCode']}{s['number']}" for s in ret_segs)
+        ret_info = {
+            "departure": ret_dep_dt.strftime("%a %b %d, %Y at %I:%M %p"),
+            "arrival": ret_arr_dt.strftime("%a %b %d, %Y at %I:%M %p"),
+            "duration": _format_duration(ret["duration"]),
+            "stops": "Nonstop" if ret_stops == 0 else f"{ret_stops} stop{'s' if ret_stops > 1 else ''}",
+            "flight_numbers": ret_flights,
+            "departure_datetime": ret_dep_dt,
+        }
+
+    carrier_code = offer.get("validatingAirlineCodes", [out_segs[0]["carrierCode"]])[0]
     airline_name = AIRLINE_NAMES.get(carrier_code, carrier_code)
-    flight_numbers = " → ".join(
-        f"{s['carrierCode']}{s['number']}" for s in segments
-    )
 
     price_info = offer["price"]
     total_price = float(price_info["grandTotal"])
@@ -134,36 +169,51 @@ def _parse_offer(offer: dict, pref) -> dict | None:
         pass
 
     # Build booking links
-    dep_date_str = departure_dt.strftime("%Y-%m-%d")
+    dep_date_str = out_dep_dt.strftime("%Y-%m-%d")
     pax = pref.num_passengers
-    kayak_url = (
-        f"https://www.kayak.com/flights/{pref.origin}-{pref.destination}"
-        f"/{dep_date_str}/{pax}adults"
-    )
-    google_flights_url = (
-        f"https://www.google.com/flights?hl=en#flt="
-        f"{pref.origin}.{pref.destination}.{dep_date_str}"
-        f";c:{currency};e:1;sd:1;t:f"
-    )
-    airline_website = _get_airline_website(carrier_code)
+    is_roundtrip = ret_info is not None
+    if is_roundtrip:
+        ret_date_str = ret_info["departure_datetime"].strftime("%Y-%m-%d")
+        kayak_url = (
+            f"https://www.kayak.com/flights/{pref.origin}-{pref.destination}"
+            f"/{dep_date_str}/{ret_date_str}/{pax}adults"
+        )
+        google_flights_url = (
+            f"https://www.google.com/flights?hl=en#flt="
+            f"{pref.origin}.{pref.destination}.{dep_date_str}"
+            f"*{pref.destination}.{pref.origin}.{ret_date_str}"
+            f";c:{currency};e:1;sd:1;t:f"
+        )
+    else:
+        kayak_url = (
+            f"https://www.kayak.com/flights/{pref.origin}-{pref.destination}"
+            f"/{dep_date_str}/{pax}adults"
+        )
+        google_flights_url = (
+            f"https://www.google.com/flights?hl=en#flt="
+            f"{pref.origin}.{pref.destination}.{dep_date_str}"
+            f";c:{currency};e:1;sd:1;t:f"
+        )
 
     return {
         "airline": airline_name,
         "carrier_code": carrier_code,
-        "flight_numbers": flight_numbers,
-        "departure": departure_dt.strftime("%a %b %d, %Y at %I:%M %p"),
-        "arrival": arrival_dt.strftime("%a %b %d, %Y at %I:%M %p"),
-        "duration": _format_duration(itinerary["duration"]),
-        "stops": "Nonstop" if num_stops == 0 else f"{num_stops} stop{'s' if num_stops > 1 else ''}",
+        "flight_numbers": out_flights,
+        "departure": out_dep_dt.strftime("%a %b %d, %Y at %I:%M %p"),
+        "arrival": out_arr_dt.strftime("%a %b %d, %Y at %I:%M %p"),
+        "duration": _format_duration(out["duration"]),
+        "stops": "Nonstop" if out_stops == 0 else f"{out_stops} stop{'s' if out_stops > 1 else ''}",
+        "return": ret_info,
+        "is_roundtrip": is_roundtrip,
         "total_price": total_price,
         "price_per_person": price_per_person,
         "currency": currency,
         "bags_included": bags_included,
-        "carry_on_included": True,  # assumed per spec
+        "carry_on_included": True,
         "kayak_url": kayak_url,
         "google_flights_url": google_flights_url,
-        "airline_website": airline_website,
-        "departure_datetime": departure_dt,
+        "airline_website": _get_airline_website(carrier_code),
+        "departure_datetime": out_dep_dt,
     }
 
 

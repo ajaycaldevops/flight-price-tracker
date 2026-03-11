@@ -15,6 +15,8 @@ class SearchPreference(db.Model):
     # Travel dates
     departure_date_from = db.Column(db.String(10), nullable=False)  # YYYY-MM-DD
     departure_date_to = db.Column(db.String(10), nullable=False)    # YYYY-MM-DD
+    return_date_from = db.Column(db.String(10), nullable=True)      # YYYY-MM-DD (round trip)
+    return_date_to = db.Column(db.String(10), nullable=True)        # YYYY-MM-DD (round trip)
 
     # Departure time window (24h format, e.g. "06:00")
     departure_time_from = db.Column(db.String(5), nullable=True)
