@@ -8,8 +8,9 @@ logger = logging.getLogger(__name__)
 _scheduler = None
 
 
-def run_price_checks(app):
-    """Called by the scheduler at 7am and 8pm. Checks all active searches."""
+def run_price_checks(app, force=False):
+    """Called by the scheduler at 7am and 8pm. Checks all active searches.
+    force=True bypasses the price-drop check (used by manual trigger)."""
     from models import SearchPreference, db
     from flight_search import search_flights
     from email_service import send_flight_alert
@@ -21,17 +22,35 @@ def run_price_checks(app):
             SearchPreference.expires_at >= now,
         ).all()
 
-        logger.info(f"[{now}] Running price checks for {len(active_searches)} active searches.")
+        logger.info(f"[{now}] Running price checks for {len(active_searches)} active searches (force={force}).")
 
+        needs_commit = False
         for pref in active_searches:
             try:
                 flights = search_flights(pref)
-                if flights:
-                    send_flight_alert(pref, flights)
-                else:
+                if not flights:
                     logger.info(f"No flights found for search #{pref.id}")
+                    continue
+                best_price = flights[0]["total_price"]
+                first_run = pref.last_best_price is None
+                price_dropped = not first_run and best_price < pref.last_best_price
+                if force or first_run or price_dropped:
+                    if price_dropped:
+                        logger.info(
+                            f"Price drop for #{pref.id}: ${pref.last_best_price:.2f} → ${best_price:.2f}"
+                        )
+                    send_flight_alert(pref, flights)
+                    pref.last_best_price = best_price
+                    needs_commit = True
+                else:
+                    logger.info(
+                        f"No price drop for #{pref.id} (best=${best_price:.2f}, last=${pref.last_best_price:.2f}), skipping email."
+                    )
             except Exception as e:
                 logger.error(f"Error processing search #{pref.id}: {e}")
+
+        if needs_commit:
+            db.session.commit()
 
         # Deactivate expired searches
         expired = SearchPreference.query.filter(

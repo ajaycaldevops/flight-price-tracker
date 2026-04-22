@@ -185,7 +185,7 @@ def create_app():
     @app.route("/run-now", methods=["POST"])
     def run_now():
         """Manually trigger a price check (for testing)."""
-        run_price_checks(app)
+        run_price_checks(app, force=True)
         flash("Price check triggered! Check your email shortly.", "success")
         return redirect(url_for("searches"))
 

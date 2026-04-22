@@ -103,6 +103,16 @@ def search_flights(pref) -> list[dict]:
     if not all_offers:
         return []
 
+    # Deduplicate by Amadeus offer ID before parsing
+    seen_ids: set[str] = set()
+    unique_offers = []
+    for offer in all_offers:
+        oid = offer.get("id")
+        if oid not in seen_ids:
+            seen_ids.add(oid)
+            unique_offers.append(offer)
+    all_offers = unique_offers
+
     flights = []
     for offer in all_offers:
         try:

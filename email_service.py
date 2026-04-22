@@ -1,5 +1,6 @@
 import smtplib
 import logging
+import traceback
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
@@ -15,11 +16,14 @@ _jinja_env = None
 def _get_jinja_env():
     global _jinja_env
     if _jinja_env is None:
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
+        # Use abspath so the path is correct regardless of working directory
+        template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+        logger.info(f"Email template dir: {template_dir}")
         _jinja_env = Environment(
             loader=FileSystemLoader(template_dir),
             autoescape=select_autoescape(["html"]),
         )
+        _jinja_env.filters["enumerate"] = enumerate
     return _jinja_env
 
 
@@ -62,7 +66,7 @@ def send_flight_alert(pref, flights: list[dict]) -> bool:
         return True
 
     except Exception as e:
-        logger.error(f"Failed to send email to {pref.email}: {e}")
+        logger.error(f"Failed to send flight alert to {pref.email}: {e}\n{traceback.format_exc()}")
         return False
 
 
@@ -93,5 +97,5 @@ def send_confirmation_email(pref) -> bool:
         logger.info(f"Confirmation sent to {pref.email}")
         return True
     except Exception as e:
-        logger.error(f"Failed to send confirmation to {pref.email}: {e}")
+        logger.error(f"Failed to send confirmation to {pref.email}: {e}\n{traceback.format_exc()}")
         return False

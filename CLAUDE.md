@@ -51,5 +51,13 @@ Flask web app + APScheduler background scheduler. All business logic runs inside
 - `departure_date_to`, `return_date_from/to`, `departure_time_from/to` — all nullable; absence means single-date or one-way or any-time search.
 - `max_stops` — nullable Integer; `None` = no stops filter, `0` = nonstop only.
 - `expires_at` — set to `created_at + tracking_days`; scheduler deactivates rows where `expires_at < now`.
+- `last_best_price` — nullable Float; `None` = never alerted yet (first run always sends). Scheduler only emails on subsequent runs if the new best price is lower.
+
+**Price-drop alert logic (`scheduler.py`):**
+- `run_price_checks(app, force=False)` — scheduled runs use `force=False` (price-drop only); the `/run-now` manual trigger passes `force=True` to always send regardless of price history.
+- After sending an alert, `last_best_price` is updated and committed so the next scheduled run has a baseline to compare against.
+
+**Flight offer deduplication (`flight_search.py`):**
+- After all Amadeus API calls, offers are deduplicated by Amadeus offer `id` before parsing. Prevents the same offer appearing multiple times in top-3 when it shows up across multiple date-pair queries.
 
 **Email templates** (`email.html`, `confirmation_email.html`) are rendered by a standalone Jinja2 `Environment` in `email_service.py` (not Flask's env). Template dir resolved with `os.path.abspath(__file__)` to avoid working-directory issues. Sent via Gmail SMTP port 587 with STARTTLS.

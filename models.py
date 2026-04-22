@@ -31,6 +31,9 @@ class SearchPreference(db.Model):
     email = db.Column(db.String(255), nullable=False)
     tracking_days = db.Column(db.Integer, nullable=False)
 
+    # Price tracking
+    last_best_price = db.Column(db.Float, nullable=True)  # None = never alerted yet
+
     # Lifecycle
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime, nullable=False)
