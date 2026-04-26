@@ -5,3 +5,6 @@ instance/
 *.db
 .claude/*
 !.claude/skills/
+!.claude/commands/
+pipeline/runs/*
+!pipeline/runs/.gitkeep
