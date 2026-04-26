@@ -3,4 +3,5 @@ __pycache__/
 *.pyc
 instance/
 *.db
-.claude/
+.claude/*
+!.claude/skills/
